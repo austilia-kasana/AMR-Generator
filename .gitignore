@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.bak*
+*.bak_*
+dist/
+build/
+*.spec
+config.txt
+*.exe
+*.eu4
+*.log
+*.png
+*.jpg
+*.webp
+.DS_Store
+Thumbs.db

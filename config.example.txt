@@ -1,8 +1,11 @@
 # AMR Generator example config. Copy to config.txt before running.
-# 搬运：raw=全部可搬；ai=全部锁死；keep=只解使用限制，保留作者搬运限制
-move=keep
-# AI 搬运倾向：yes=写 common/defines/00_amr_ai_move.lua 把四项归零；no=不动
-aimove=yes
+# 默认保持旧行为：全部可搬 + 不改 AI 倾向。
+# 想要“只解使用限制、不解除搬运限制”：改成 move=keep
+# 想关掉 AI 主动搬运奇观：改成 aimove=yes
+
+move=raw
+aimove=no
+
 # 一键三级决议
 maxtierdec=yes
 # 隐藏奇观加成：no / agp / yes

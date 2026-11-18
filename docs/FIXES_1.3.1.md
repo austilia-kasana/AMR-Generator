@@ -22,11 +22,12 @@
 - 修复：先收集全部 monument block 的字符区间；兜底只改块外字段。
 - raw 模式的构建校验也改为：普通奇观必须 yes，名单内必须 no。
 
-## 4. 默认值与示例配置同步
+## 4. 这两个功能是 opt-in 开关，不是默认行为
 
-- `MAKE_MOVE = 'keep'`
-- `MAKE_AI_MOVE = True`
-- 与 `config.example.txt` 一致；无 config.txt 时也按 1.3 推荐设置运行。
+- 源码默认：`MAKE_MOVE='raw'`、`MAKE_AI_MOVE=False`（保持旧行为）。
+- 想“只解使用限制、不解除搬运限制”：显式写 `move=keep`。
+- 想关掉 AI 主动搬运：显式写 `aimove=yes`。
+- `config.example.txt` 默认展示 `raw` / `no`，并把 `keep` / `yes` 作为注释备选，避免复制示例就替用户打开功能。
 
 ## 5. AI defines 第四项核实
 

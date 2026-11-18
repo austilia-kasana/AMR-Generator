@@ -404,7 +404,7 @@ def run(moddir):
 
     # ⑤ 每距离基础搬运时间 = 1
     # keep：搬运限制原样保留，不能断言统一成 1。
-    if (val_of(cfg, 'move') or 'keep').strip().lower() == 'keep':
+    if (val_of(cfg, 'move') or 'raw').strip().lower() == 'keep':
         check('move=keep：move_days_per_unit_distance 保持作者原样', [])
     else:
         md = val_of(cfg, 'movedays') or '1'

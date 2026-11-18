@@ -27,10 +27,14 @@ python src/generate.py
 配置示例：
 
 ```ini
-# 搬运：raw=全部放开；ai=全部锁死；keep=只解使用限制，保留作者限制
-move=keep
-# AI 搬运倾向：yes=写外部 defines 归零；no=不动
-aimove=yes
+# 搬运：raw=全部放开（默认）；ai=全部锁死；keep=只解使用限制，保留作者限制
+move=raw
+# 想要“只解使用限制、不解除搬运限制”就改成：
+# move=keep
+# AI 搬运倾向：yes=写外部 defines 归零；no=不动（默认）
+aimove=no
+# 想关掉 AI 主动搬运就改成：
+# aimove=yes
 # 一键三级决议
 maxtierdec=yes
 ```

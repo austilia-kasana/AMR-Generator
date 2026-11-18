@@ -112,13 +112,13 @@ MAKE_BUILDTIME = '90'       # 同上
 # 注：曾经做过"玩家专属搬迁决议"（move_great_project），实测点了没反应；
 #     也试过 destroy + add_great_project 重建，实测只摧毁成功、重建没成功。
 #     两条路都已放弃，见 _交接\10_第二轮交接说明.md 第 4.9/4.10 节。
-MAKE_MOVE = 'keep'          # 1.3 默认：只解使用限制，保留作者搬运限制；'raw' / 'ai' 仍可选
+MAKE_MOVE = 'raw'           # 默认旧行为；要“只解使用限制、不解除搬运限制”就显式写 move=keep
 # AI 搬运奇观倾向（定义层外部文件）。aimove=yes 时在产物里写
 # common/defines/00_amr_ai_move.lua，把 NAI 的四个 GREAT_PROJECT_DESIRE_*
 # 归零：AI 不再想把奇观搬去首都/从附庸搬走。
 # 不影响玩家的 can_be_moved；想连玩家一起锁，用 move=ai。
 # 本 mod 名以 !AMR 开头，按名字排序在最前，defines 覆盖优先。
-MAKE_AI_MOVE = True         # 1.3 默认：写外部 defines，把 AI 搬运倾向归零
+MAKE_AI_MOVE = False        # 可选开关：aimove=yes 才写外部 defines，把 AI 搬运倾向归零
 # ★ 2026-11-18（1.3）：通路 / 地下城类奇观【永远不可搬】，不受 move= 影响。
 #   理由：这些是"地图通路"机制（矮人隧道、升降机、妖精传送门、地下城入口），
 #   搬走会把通路断开或让地牢探索失效。原版三条运河（基尔/苏伊士/巴拿马）同理。

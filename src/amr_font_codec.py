@@ -106,14 +106,28 @@ if os.path.exists(CHARMAP_PATH):
             CHARMAP[k] = (v[0], v[1], v[2])
 
 
+# 引擎自带的标记（颜色分节符等）不能编码，必须原样写进文件
+ENGINE_LITERAL = "\u00a7"       # §
+
+
 def missing_chars(text):
-    """返回 text 里【字库表没有】的汉字（这些字无法安全编码）。"""
-    return [c for c in text if "\u4e00" <= c <= "\u9fff" and c not in CHARMAP]
+    """返回 text 里【没法编码】的字符：不是 ASCII、不在字库表、也不是引擎标记。
+
+    ★ 1.3.5：原来只查 U+4E00–U+9FFF 的汉字，中文标点（，、。；：）漏检，
+      于是被原样写进文件、在游戏里显示成 "?"（实测决议标题
+      "奇观升级更便宜、更快" 显示为 "奇观升级更便宜?更快"）。现在标点也查。
+    """
+    return [c for c in text
+            if ord(c) > 0x7E and c not in CHARMAP and c not in ENGINE_LITERAL]
 
 
 def encode(text, strict=False):
     """
-    把中文编成可写进 .yml 的字符串。
+    把中文（含中文标点）编成可写进 .yml 的字符串。
+
+    ★ 1.3.5：以前只把汉字送去查表，标点走进 else 分支被原样写出，
+      而汉化字库里没有那些码位的字形 —— 游戏里就是 "?"。
+      现在只要字库表里有（标点都在），就一律走三字节编码。
 
     strict=True  -> 遇到字库表里没有的字就抛异常（推荐：宁可报错也别写乱码）
     strict=False -> 表里没有的字退回「页 0x10 直写」（v = 码位本身）。
@@ -121,16 +135,16 @@ def encode(text, strict=False):
     """
     out = []
     for ch in text:
-        if "\u4e00" <= ch <= "\u9fff":
-            if ch in CHARMAP:
-                pg, b1, b2 = CHARMAP[ch]
-            elif strict:
+        if ch in CHARMAP:
+            pg, b1, b2 = CHARMAP[ch]
+        elif "\u4e00" <= ch <= "\u9fff":
+            if strict:
                 raise KeyError(f"字库表没有这个字：{ch} U+{ord(ch):04X}")
-            else:
-                pg, b1, b2 = 0x10, ord(ch) & 0xFF, ord(ch) >> 8
-            out.append(from_byte(pg) + from_byte(b1) + from_byte(b2))
+            pg, b1, b2 = 0x10, ord(ch) & 0xFF, ord(ch) >> 8
         else:
             out.append(ch)
+            continue
+        out.append(from_byte(pg) + from_byte(b1) + from_byte(b2))
     return "".join(out)
 
 

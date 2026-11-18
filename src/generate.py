@@ -981,8 +981,12 @@ for V in VARIANTS:
                 log('   !! 本地化缺字 %s：%s（这条退回英文）' % (key, ''.join(miss)))
                 return None
             enc = FONT.encode(cn, strict=True)
-            # 0x0A/0x0D 会让 loc 行断开；0x1A 是 SUB 控制码，实测会把行截断/显示乱码。
-            _ctrl = [c for c in enc if ord(c) in (0x0A, 0x0D, 0x1A)]
+            # 0x0A/0x0D 会让 loc 行在这里断开，必须退回英文。
+            # ★ 1.3.5 更正：0x1A【不是】问题。主汉化包 "Chinese Language Mod for 1.37"
+            #   的 146 个 yml 里有 33075 个 0x1A 字节，游戏显示完全正常；
+            #   1.3.4 把"决议文本乱码"归因为 0x1A 是误判，真正的乱码点是没有编码的
+            #   中文标点（，、。；：被原样写进文件 → 字库没这个码位 → 显示成 "?"）。
+            _ctrl = [c for c in enc if ord(c) in (0x0A, 0x0D)]
             if _ctrl:
                 log('   !! 本地化编码含控制字符 %s：%s（这条退回英文）'
                     % (key, ', '.join('0x%02X' % ord(c) for c in _ctrl)))
@@ -1036,7 +1040,7 @@ for V in VARIANTS:
     if MAKE_MAX_TIER_DEC and all_types:
         _mt_t = '奇观全部升到三级'
         _mt_d = ('点一次，你名下所有未满三级的奇观升到三级。免费、可重复点：'
-                 '每次只升还没到三级的，已三级的不动，也不会增加发展度；'
+                 '每次只升还没到三级的，已三级的不动，也不增加发展度；'
                  '没拥有的、没建的不动。')
         LOC += _line('AMR_max_all_monuments_title',
                      'Set all owned monuments to tier 3', _mt_t)

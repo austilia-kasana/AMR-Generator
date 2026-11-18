@@ -78,7 +78,10 @@ except Exception:
 #   年份闸/禁重复建/奖励解锁改写法/体检与规划验证两个新工具）统一算 1.2 发布。
 # 2026-11-18：1.3 —— 一键三级决议（免费全自动）+ 通路/地下城类永远不可搬 +
 #   #start 恢复时加否定词过滤（作者的 "doesnt need this" 不再被误恢复）。
-TOOL_VERSION = '1.3'
+# 2026-11-19：1.3.5 —— 「一键三级」改可重复点（玩家奇观会一直增加），
+#   并且不再调用原版 set_great_project_tier_3：改用它的三条分支、只加等级，
+#   一点发展度都不给（原版 2→3 给 +4、1→3 给 +2；没 Leviathan 时它还会无限刷税基）。
+TOOL_VERSION = '1.3.5'
 
 # 1.3：AI 搬运奇观倾向（外部 defines 文件）。
 # 定义层不能在游戏内改，只能生成 common/defines/*.lua 让引擎启动时读。
@@ -833,38 +836,57 @@ for V in VARIANTS:
     #   发展度（原版脚本就这样）。所以每个 if 必须加 NOT tier=3 guard，否则重复点
     #   决议会变成“加发展度”按钮。
     #
+    # ★★ 1.3.5（2026-11-19 用户反馈）：决议改成【可重复点】。
+    #   原因：玩家名下的奇观会一直增加（打下来、搬过来），一次性决议以后就再也用不上。
+    #   但直接去掉国家标记会引出两个"其他效果"，所以连原版效果一起换掉：
+    #     ① 原版 set_great_project_tier_3 在 2→3 时给 +4 发展度、1→3 时给 +2
+    #        （00_scripted_effects.txt:1387-1475），每件奇观白送一次；
+    #     ② 没有 Leviathan 时它退化成 add_base_tax/production/manpower 各 2 点，
+    #        而等级一点都不涨 —— 这时 NOT tier=3 的守卫永远不成立 = 可以无限刷发展度。
+    #   于是改成【照抄原版那三条分支、只保留 add_great_project_tier】：
+    #     tier=0 -> 加 3 级；tier=1 -> 加 2 级；tier=2 -> 加 1 级（三条都正好落到 3 级）
+    #   这样：等级照样一次到 3，但一点发展度都不给；已是 3 级的三条 limit 全不成立，
+    #   重复点也不会变成加发展度按钮。
+    #
     # 遍历方式：every_owned_province（原版 scripted_effects 里 65 处都这么用），
     #   每件奇观套一个 if 守卫 —— 对没有这件奇观的省份直接调用会报错，必须守。
-    #   668 件 × 5 行 ≈ 3300 行 / 约 100 KB 脚本；一次点击大约 20 万次触发器求值，
-    #   对一次性决议可以接受。
+    #   668 件 × 3 条分支 ≈ 1.3 万行 / 约 400 KB 脚本；一次点击大约 40 万次触发器求值，
+    #   可重复点的决议这个量级可以接受。
     if MAKE_MAX_TIER_DEC and all_types:
         _mt = ['country_decisions = {\n',
                '\tAMR_max_all_monuments = {\n',
                '\t\tmajor = yes\n',
                '\t\tpotential = {\n',
                '\t\t\tai = no                     # the AI never takes this\n',
-               '\t\t\tNOT = { has_country_flag = AMR_max_all_monuments_done }\n',
                '\t\t}\n',
                '\t\tai_will_do = { factor = 0 }\n',
                '\t\tallow = { }\n',
                '\t\teffect = {\n',
                '\t\t\tlog = "AMR: all owned monuments set to tier 3"\n',
-               '\t\t\tset_country_flag = AMR_max_all_monuments_done\n',
                '\t\t\tevery_owned_province = {\n']
         for _t in all_types:
-            _mt.append('\t\t\t\tif = {\n')
-            _mt.append('\t\t\t\t\tlimit = {\n')
-            _mt.append('\t\t\t\t\t\thas_great_project = { type = %s }\n' % _t)
-            _mt.append('\t\t\t\t\t\tNOT = { has_great_project = { type = %s tier = 3 } }\n' % _t)
-            _mt.append('\t\t\t\t\t}\n')
-            _mt.append('\t\t\t\t\tset_great_project_tier_3 = { type = %s }\n' % _t)
-            _mt.append('\t\t\t\t}\n')
+            # 照抄原版 set_great_project_tier_3 的三条分支，但只保留等级提升：
+            #   tier=0 -> 加 3 级；tier=1 -> 加 2 级；tier=2 -> 加 1 级（三条都正好到 3 级）
+            for _from, _add in ((0, 3), (1, 2), (2, 1)):
+                _mt.append('\t\t\t\tif = {\n')
+                _mt.append('\t\t\t\t\tlimit = {\n')
+                _mt.append('\t\t\t\t\t\thas_great_project = { type = %s tier = %d }\n'
+                           % (_t, _from))
+                _mt.append('\t\t\t\t\t\tNOT = { has_great_project = { type = %s tier = %d } }\n'
+                           % (_t, _from + 1))
+                _mt.append('\t\t\t\t\t}\n')
+                _mt.append('\t\t\t\t\tadd_great_project_tier = { type = %s tier = %d }\n'
+                           % (_t, _add))
+                _mt.append('\t\t\t\t}\n')
         _mt.append('\t\t\t}\n\t\t}\n\t}\n}\n')
         _mt_body = ''.join(_mt)
-        _bad_mt = [t for t in all_types if ('type = %s tier = 3' % t) not in _mt_body]
-        if _bad_mt or 'AMR_max_all_monuments_done' not in _mt_body:
-            problems_all.append('一键三级决议缺少 tier=3 防重复/一次性守卫：%s'
+        _bad_mt = [t for t in all_types
+                   if ('add_great_project_tier = { type = %s tier = 3 }' % t) not in _mt_body]
+        if _bad_mt:
+            problems_all.append('一键三级决议缺少 tier=0 直达 3 级的分支：%s'
                                 % '、'.join(_bad_mt[:5]))
+        if 'AMR_max_all_monuments_done' in _mt_body:
+            problems_all.append('一键三级决议还是每局一次（应改成可重复点）')
         _nl_mt = '\r\n'
         for _rel in (os.path.join('common', 'decisions'), 'decisions'):
             _ddir_mt = os.path.join(OUT, _rel)
@@ -872,10 +894,11 @@ for V in VARIANTS:
             write_text(os.path.join(_ddir_mt, 'AMR_max_all_monuments.txt'),
                        _mt_body, nl=_nl_mt)
         log('')
-        log('一键三级决议：AMR_max_all_monuments（免费，每局一次，只升未满三级的）')
-        log('   写入 %d 件奇观的升级分支，脚本 %d KB / %d 行'
+        log('一键三级决议：AMR_max_all_monuments（免费、可重复点，只升未满三级的）')
+        log('   写入 %d 件奇观 × 3 条分支（0→3 / 1→3 / 2→3），脚本 %d KB / %d 段'
             % (len(all_types), len(_mt_body) // 1024, len(_mt)))
-        log('   用的是原版 set_great_project_tier_3（内部对 0/1/2 级都有级联，一次到位）。')
+        log('   不调用原版 set_great_project_tier_3：它升级时会给发展度，'
+            '没 Leviathan 时更会退化成无限刷税基。')
         log('   不想要：config.txt 里写 maxtierdec=no 再跑一次。')
     elif not MAKE_MAX_TIER_DEC:
         log('   （maxtierdec=no：没有生成一键三级决议）')
@@ -974,14 +997,15 @@ for V in VARIANTS:
     # 一键三级决议的文案（1.3）。键名规则同上：<决议名>_title / _desc
     if MAKE_MAX_TIER_DEC and all_types:
         _mt_t = '奇观全部升到三级'
-        _mt_d = ('点一次，你名下所有未满三级的奇观升到三级。免费，每局只能用一次；'
-                 '已三级的不再增加发展度。没建、没拥有的不动。')
+        _mt_d = ('点一次，你名下所有未满三级的奇观升到三级。免费、可重复点：'
+                 '每次只升还没到三级的，已三级的不动，也不会增加发展度；'
+                 '没拥有的、没建的不动。')
         LOC += _line('AMR_max_all_monuments_title',
                      'Set all owned monuments to tier 3', _mt_t)
         LOC += _line('AMR_max_all_monuments_desc',
                      ('Every owned monument below tier 3 jumps straight to tier 3 at once. '
-                      'Free, once per campaign. Monuments already at tier 3 do not gain '
-                      'development. Monuments you do not own are untouched.'), _mt_d)
+                      'Free and repeatable: each click only upgrades monuments still below '
+                      'tier 3, never grants development, and touches nothing you do not own.'), _mt_d)
         LOC_CN += ' AMR_max_all_monuments_title:0 "%s"\n' % _mt_t
         LOC_CN += ' AMR_max_all_monuments_desc:0 "%s"\n' % _mt_d
     # 建造花费 / 建造时间打折（生成时写进定义的那部分）—— 单列一条自己的提示

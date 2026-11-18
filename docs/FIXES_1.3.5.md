@@ -42,6 +42,33 @@ else:
 
 ## 改动
 
+### ⓪ 点击卡顿：先给省份加一道便宜预筛
+
+用户实测"点这个决议会卡一下"。原因很直接：
+
+```
+every_owned_province = {            # 1554 个省（该存档）
+    if = { ... } × 2985             # 995 件奇观 × 3 条分支
+}
+```
+
+≈ **460 万次 `has_great_project` 求值**挤在一帧里，版图越大越卡。
+
+修法（参考 `!海洋共和国` 的 `azuki_expand_VC1` 等决议：也是先放一个便宜 `limit`
+再干活）：
+
+```text
+every_owned_province = {
+    limit = { has_great_project = { type = any } }   # 这座省有没有任何奇观
+    if = { ... } × 2985
+}
+```
+
+只有**真有奇观的省**（这个存档是 2 个）才进 if 链，其余省份一次求值就跳过。
+依据：本工程 `amr_rules.py` 早就查实「`has_great_project` 的 `type` 只接受
+`any` 或写死的奇观键名」，wiki 的 Triggers 表也写着 "the specified great project,
+or any"。生成器加了自检，产物里没有这行就报 problems。
+
 ### ① 去掉一次性标记
 
 `AMR_max_all_monuments` 的 `potential` 里的 `NOT = { has_country_flag = AMR_max_all_monuments_done }`

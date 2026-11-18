@@ -888,8 +888,18 @@ for V in VARIANTS:
     #
     # 遍历方式：every_owned_province（原版 scripted_effects 里 65 处都这么用），
     #   每件奇观套一个 if 守卫 —— 对没有这件奇观的省份直接调用会报错，必须守。
-    #   668 件 × 3 条分支 ≈ 1.3 万行 / 约 400 KB 脚本；一次点击大约 40 万次触发器求值，
-    #   可重复点的决议这个量级可以接受。
+    #
+    # ★★ 1.3.5 性能：先在 every_owned_province 里放一个【极便宜的 limit】，
+    #   把"这座省一个奇观都没有"的情况整段挡掉，再进 995×3 的 if 链。
+    #   has_great_project = { type = any } = "这座省有没有任何奇观"
+    #   （本工程在 amr_rules.py 里已查实：has_great_project 的 type 只接受
+    #     any 或写死的奇观键名；wiki 的 Triggers 表也写的是 "the specified great
+    #     project, or any"）。
+    #   用户实测：不做这一步，点决议会明显卡一下 —— 1554 个省 × 2985 段 if
+    #   ≈ 460 万次求值全挤在一帧里。加了之后只有"真有奇观的省"（存档里通常个位数）
+    #   才进 if 链。
+    #   参考写法：!海洋共和国 的 azuki_expand_VC1 等决议也是在
+    #   every_owned_province 里先放 province_group/region 的便宜 limit 再干活。
     if MAKE_MAX_TIER_DEC and all_types:
         _mt = ['country_decisions = {\n',
                '\tAMR_max_all_monuments = {\n',
@@ -901,7 +911,8 @@ for V in VARIANTS:
                '\t\tallow = { }\n',
                '\t\teffect = {\n',
                '\t\t\tlog = "AMR: all owned monuments set to tier 3"\n',
-               '\t\t\tevery_owned_province = {\n']
+               '\t\t\tevery_owned_province = {\n',
+               '\t\t\t\tlimit = { has_great_project = { type = any } }\n']
         for _t in all_types:
             # 照抄原版 set_great_project_tier_3 的三条分支，但只保留等级提升：
             #   tier=0 -> 加 3 级；tier=1 -> 加 2 级；tier=2 -> 加 1 级（三条都正好到 3 级）
@@ -925,6 +936,8 @@ for V in VARIANTS:
                                 % '、'.join(_bad_mt[:5]))
         if 'AMR_max_all_monuments_done' in _mt_body:
             problems_all.append('一键三级决议还是每局一次（应改成可重复点）')
+        if 'has_great_project = { type = any }' not in _mt_body:
+            problems_all.append('一键三级决议缺少 type = any 的省份预筛（会卡）')
         _nl_mt = '\r\n'
         for _rel in (os.path.join('common', 'decisions'), 'decisions'):
             _ddir_mt = os.path.join(OUT, _rel)

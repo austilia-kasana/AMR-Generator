@@ -165,6 +165,8 @@ DECISION_MOVE_COOLDOWN = 365
 #   monument_boost     = { great_project_upgrade_cost = -0.25 }
 #   talented_architect = { build_time = -0.1  great_project_upgrade_time = -0.1 }
 MAKE_UPGRADE_DEC = True
+# ★ 1.3.5：默认与一键三级互斥（互斥逻辑在文件末尾）。想要两个都发：config.txt 写 upgdec=force。
+UPGRADE_DEC_OFF_BY_TIERDEC = False   # True = 被"一键三级"默认关掉的，不是玩家自己写的 upgdec=no
 # ★ 2026-11-18（1.3）新增：**一键三级决议** —— 点一次，你名下所有奇观立刻升到三级。
 #   用户 2026-11-18 定的：免费 + 全自动（不收费、无冷却）。
 #   实现：原版自带脚本效果 set_great_project_tier_3 = { type = <键名> }，
@@ -346,3 +348,12 @@ if _cfgfile:
             MAKE_ONLY_GENERIC = _v.strip().lower() in ('generic', 'vanilla', 'g')
 if MAKE_ONLY_GENERIC:
     MAKE_GENERIC = True
+
+# ★ 1.3.5：一键三级 与 升级打折 默认【互斥】。
+#   一键三级一旦能用（免费直达 III），"升级花费 -90%"" 的收益就是 0，
+#   而且玩家还得先花 50 杜卡特才知道有免费按钮 —— 等于花钱陷阱。
+#   所以：config.txt 里【没有明确写 upgdec】时，只要 maxtierdec 开着，就不生成打折决议。
+#   想两个都要：config.txt 写 upgdec=force（写了的键在 _CFG_SET 里，下面不会关掉它）。
+if MAKE_MAX_TIER_DEC and MAKE_UPGRADE_DEC and 'upgdec' not in _CFG_SET:
+    MAKE_UPGRADE_DEC = False
+    UPGRADE_DEC_OFF_BY_TIERDEC = True

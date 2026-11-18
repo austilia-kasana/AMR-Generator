@@ -587,9 +587,43 @@ for V in VARIANTS:
     if MAKE_AI_MOVE:
         _defdir = os.path.join(OUT, 'common', 'defines')
         os.makedirs(_defdir, exist_ok=True)
-        write_text(os.path.join(_defdir, '00_amr_ai_move.lua'),
+        # ★ 1.3.5：文件名从 00_amr_ai_move.lua 改成 zzzz_amr_ai_move.lua。
+        #   不同名的 defines 文件不是"谁覆盖谁"，而是【各执行一遍、后赋值的赢】，
+        #   顺序由文件名排序决定（00_ 排最前，等于永远第一个被赋值）。
+        #   原来叫 00_ 的话，别的 mod 只要写个 10_/zz_ 就能把我们的归零改回去。
+        #   改成 zzzz_ 是尽量靠后 —— 但没有任何文件名能保证永远压过后来者，
+        #   所以下面还会把整个播放集扫一遍，发现冲突就在日志里点名。
+        write_text(os.path.join(_defdir, 'zzzz_amr_ai_move.lua'),
                    AI_MOVE_DEFINES, nl='\r\n')
-        log('   AI 搬运倾向：写入 common/defines/00_amr_ai_move.lua（四项归零）')
+        log('   AI 搬运倾向：写入 common/defines/zzzz_amr_ai_move.lua（四项归零，尽量靠后加载）')
+        _conflict_def = []
+        for _mf in enabled:
+            if is_mine(_mf):
+                continue
+            _r, _n = mod_root(_mf)
+            if not _r or not os.path.isdir(_r):
+                continue
+            _cands = glob.glob(os.path.join(_r, 'common', 'defines', '*.lua'))
+            _cands.append(os.path.join(_r, 'common', 'defines.lua'))
+            for _cf in _cands:
+                if not os.path.isfile(_cf):
+                    continue
+                try:
+                    _ct = open(_cf, encoding='utf-8-sig', errors='ignore').read()
+                except OSError:
+                    continue
+                _hits = sorted(set(re.findall(r'GREAT_PROJECT_DESIRE_[A-Z_]+', _ct)))
+                if _hits:
+                    _conflict_def.append((_n or _mf, os.path.basename(_cf), _hits))
+        if _conflict_def:
+            log('   !! 预警：下面这些 mod 也改了 AI 搬运倾向的 defines，可能盖掉我们：')
+            for _cn, _cfn, _ch in _conflict_def[:6]:
+                log('        %s -> %s（%s）' % (_cn, _cfn, '、'.join(_ch[:4])))
+            log('      我们的文件排在 zzzz_，只有对方排更后才轮到我们生效；'
+                '真要强硬，只能做针对性的兼容补丁。')
+            log('      （不致命：只是 AI 搬运倾向可能不生效，玩家侧不受影响）')
+        else:
+            log('   已扫播放集：没有其他 mod 改这几个 defines 键。')
     if V['key'] == 'full' and PACKS:
         n_pack = sum(copy_pack_content(r, OUT) for r, _n in PACKS)
         log('   并入纯奇观包的图/本地化：%d 个 mod，%d 个文件（%s）'
@@ -818,7 +852,11 @@ for V in VARIANTS:
         log('   没钱也能点 —— 游戏会自动贷款，所以 allow 里不检查 treasury。')
         log('   不想要：config.txt 里写 upgdec=no 再跑一次。')
     else:
-        log('   （upgdec=no：没有生成升级打折决议）')
+        if UPGRADE_DEC_OFF_BY_TIERDEC:
+            log('   （没生成升级打折决议：一键三级已经免费直达 III，打折没有收益。')
+            log('    想两个都要：config.txt 写 upgdec=force 再跑一次）')
+        else:
+            log('   （upgdec=no：没有生成升级打折决议）')
 
     # ---- 一键三级决议（1.3 新增）-------------------------------------------
     # 用户 2026-11-18 定的：**免费 + 全自动** —— 点一次，名下所有奇观立刻三级。

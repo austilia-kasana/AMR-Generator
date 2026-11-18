@@ -54,9 +54,14 @@ Q2. 为什么不直接发布成品 submod？
 A2.最关键的是，成品里带着其他 mod 的定义和图标，等于分发他人内容，会被 Steam 判定并下架。其次各 mod 对 submod 的态度不同，作者没精力逐个求证；而且成品一样要接管奇观目录，装两个照样互相顶掉。后续可能针对授权允许的 mod 单独上传。
 The main reason is that a finished build carries other mods' definitions and icons, which counts as redistributing someone else's content and gets taken down once Steam rules on it. On top of that, submod policies differ and the author has no time to ask every one, and a finished submod still takes over the monument folder, so two of them override each other anyway. Builds for the mods that explicitly allow it may follow later.
 
+V1.3.5
+「奇观全部升到三级」改成【可以重复点】：玩家名下的奇观会一直增加（打下来、搬过来），一次性决议用掉之后，新到手的奇观就再也升不上去了。同时不再调用原版 set_great_project_tier_3，改成用它那三条分支、只提升等级 —— 原版在 2→3 时送 +4 发展度、1→3 时送 +2，而且没有 Leviathan 时会退化成“等级不涨、只加税基/生产/人力”，重复点等于无限刷。现在点多少次都只改等级，一点发展度都不给。另有两项调整：一键三级已经免费直达 III 之后，“升级打折”（50 杜卡特）就只剩花钱，所以两者默认互斥（想都要：config.txt 里写 upgdec=force）；aimove 的 defines 文件改名 zzzz_amr_ai_move.lua —— 不同名的 defines 文件是各执行一遍、后赋值的赢，原来叫 00_ 等于永远第一个被别的 mod 改回去；生成时还会扫一遍播放集，发现别的 mod 也改这几个键就预警。
+V1.3.5
+The "set every owned monument to tier 3" decision is now repeatable: players keep acquiring monuments (conquest, relocation), so a one-shot decision stopped helping with the ones you get later. It also no longer calls vanilla set_great_project_tier_3 - that effect hands out +4 development on 2->3 and +2 on 1->3, and without Leviathan it falls back to adding tax/production/manpower without ever changing the tier, which a repeatable click would farm forever. The decision now uses vanilla's three tier branches and only raises the tier: no development, ever. Two smaller changes: once the free tier-3 decision exists the 50-ducat upgrade discount is pointless, so the two are mutually exclusive by default (write upgdec=force to get both); and the aimove defines file is now zzzz_amr_ai_move.lua, because defines files with different names all run and the last assignment wins, so a 00_ prefix guaranteed everyone else overwrote it. The generator now also scans the playset and warns when another mod touches the same keys.
+
 V1.3
-新增决议「奇观全部升到三级」：免费、无冷却，点一次你名下所有已拥有的奇观直接升到三级（用的是原版自带效果，0/1/2 级都能一次到位）。通路/地下城类奇观（矮人隧道、升降机、妖精传送门、地下城入口，加原版三条运河，共 38 件）现在【永远不可搬】，不会被"一键放开搬运"顺手放开 —— 搬了会断地图通路或让地牢探索失效。新增 `move=keep`：只解除使用限制，can_be_moved 和搬运耗时完全保留作者原样，不解除搬运限制。新增 `aimove=yes`：生成 common/defines/00_amr_ai_move.lua，把 AI 的奇观搬运倾向四项归零（不影响玩家）。修正"恢复被注释掉的 start"的逻辑：作者在注释里写明"doesnt need this / 不需要"的，不再被误恢复成真 start。
-A "set every owned monument to tier 3" decision: free, no cooldown, one click takes all monuments you own straight to tier 3. Tunnel/dungeon monuments (38 of them - dwarven tunnels, lifts, fey portals, dungeon entrances plus the three vanilla canals) now always stay unmovable, because moving them would break map passages or dungeon exploration. New `move=keep`: only the use restrictions are lifted; can_be_moved and move time stay exactly as the author wrote them, so movement is still restricted. New `aimove=yes`: writes common/defines/00_amr_ai_move.lua, zeroing the four AI Great Project relocation desire values (the player is unaffected). Fixed the restoration of commented-out start lines: when the author's comment says the start is not needed, it is no longer restored.
+新增决议「奇观全部升到三级」：免费、无冷却，点一次你名下所有已拥有的奇观直接升到三级（用的是原版自带效果，0/1/2 级都能一次到位）。通路/地下城类奇观（矮人隧道、升降机、妖精传送门、地下城入口，加原版三条运河，共 38 件）现在【永远不可搬】，不会被"一键放开搬运"顺手放开 —— 搬了会断地图通路或让地牢探索失效。新增 `move=keep`：只解除使用限制，can_be_moved 和搬运耗时完全保留作者原样，不解除搬运限制。新增 `aimove=yes`：生成 common/defines/zzzz_amr_ai_move.lua，把 AI 的奇观搬运倾向四项归零（不影响玩家）。修正"恢复被注释掉的 start"的逻辑：作者在注释里写明"doesnt need this / 不需要"的，不再被误恢复成真 start。
+A "set every owned monument to tier 3" decision: free, no cooldown, one click takes all monuments you own straight to tier 3. Tunnel/dungeon monuments (38 of them - dwarven tunnels, lifts, fey portals, dungeon entrances plus the three vanilla canals) now always stay unmovable, because moving them would break map passages or dungeon exploration. New `move=keep`: only the use restrictions are lifted; can_be_moved and move time stay exactly as the author wrote them, so movement is still restricted. New `aimove=yes`: writes common/defines/zzzz_amr_ai_move.lua, zeroing the four AI Great Project relocation desire values (the player is unaffected). Fixed the restoration of commented-out start lines: when the author's comment says the start is not needed, it is no longer restored.
 
 V1.2
 省份面板可搬运，且又快又便宜（每距离基础搬运时间统一为 1）；新增决议「奇观升级更便宜、更快」（扣 50 杜卡特，升级花费/时间 −90%%）；建造规则重做，玩家与 AI 用 if/else 分开，AI 照旧按作者原本的条件自己建；年份没到的建不了，同一件建不出第二个（全局标记）；有 start 的钉回它自己那个省，没有 start 的隐藏奇观改在玩家首都建；修掉 146 件奇观条件失效的老 bug。
@@ -219,7 +224,8 @@ Names, pictures and definitions still come from the original mods; the generator
   move=ai          全部锁死搬运（谁都不能搬）/ lock the Move button for everyone
   aimove=yes       生成外部 defines，把 AI 搬运倾向归零（默认）/ write external defines to zero AI relocation desire (default)
   movedays=1       仅 raw/ai 模式：每距离基础搬运时间统一成这个值（keep 模式不动）/ only raw/ai: move_days_per_unit_distance
-  upgdec=yes       生成"升级打折"决议 / build the upgrade-discount decision（默认）
+  upgdec=yes       生成"升级打折"决议 / build the upgrade-discount decision
+                   （默认与一键三级互斥：maxtierdec 开着就不发它；要两个都要写 upgdec=force）
   upgcost=-0.9     该决议给多少升级花费折扣 / upgrade cost discount it grants
   upgtime=-0.9     该决议给多少升级时间折扣 / upgrade time discount it grants
   badstart=yes     start 写成 event_target 之类的奇观：自动修/挡掉（默认）

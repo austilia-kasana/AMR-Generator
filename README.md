@@ -47,7 +47,7 @@ maxtierdec=yes
 python -m unittest discover -s src/tests -v
 ```
 
-当前 117 例测试。游戏内测试记录见 [docs/TEST_REPORT_1.3.md](docs/TEST_REPORT_1.3.md)，P0 修复记录见 [docs/FIXES_1.3.1.md](docs/FIXES_1.3.1.md)。
+当前 117 例测试。游戏内测试记录见 [docs/TEST_REPORT_1.3.md](docs/TEST_REPORT_1.3.md)，P0 修复记录见 [docs/FIXES_1.3.1.md](docs/FIXES_1.3.1.md)，一键三级决议修复见 [docs/FIXES_1.3.3.md](docs/FIXES_1.3.3.md)。
 
 ## 打包 exe
 

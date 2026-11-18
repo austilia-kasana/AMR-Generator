@@ -829,6 +829,9 @@ for V in VARIANTS:
     #   所以【一次调用就能从 0 级直达 3 级】，不需要连着调 tier_1 / tier_2。
     #   它还自带 has_dlc = "Leviathan" 判断：没这个 DLC 时退回加税基/生产/人力
     #   （原版行为，照旧，不额外处理）。
+    # ★ 关键：set_great_project_tier_3 在【已经 tier=3】时会 random_list 加 6 点
+    #   发展度（原版脚本就这样）。所以每个 if 必须加 NOT tier=3 guard，否则重复点
+    #   决议会变成“加发展度”按钮。
     #
     # 遍历方式：every_owned_province（原版 scripted_effects 里 65 处都这么用），
     #   每件奇观套一个 if 守卫 —— 对没有这件奇观的省份直接调用会报错，必须守。
@@ -840,19 +843,28 @@ for V in VARIANTS:
                '\t\tmajor = yes\n',
                '\t\tpotential = {\n',
                '\t\t\tai = no                     # the AI never takes this\n',
+               '\t\t\tNOT = { has_country_flag = AMR_max_all_monuments_done }\n',
                '\t\t}\n',
                '\t\tai_will_do = { factor = 0 }\n',
                '\t\tallow = { }\n',
                '\t\teffect = {\n',
                '\t\t\tlog = "AMR: all owned monuments set to tier 3"\n',
+               '\t\t\tset_country_flag = AMR_max_all_monuments_done\n',
                '\t\t\tevery_owned_province = {\n']
         for _t in all_types:
             _mt.append('\t\t\t\tif = {\n')
-            _mt.append('\t\t\t\t\tlimit = { has_great_project = { type = %s } }\n' % _t)
+            _mt.append('\t\t\t\t\tlimit = {\n')
+            _mt.append('\t\t\t\t\t\thas_great_project = { type = %s }\n' % _t)
+            _mt.append('\t\t\t\t\t\tNOT = { has_great_project = { type = %s tier = 3 } }\n' % _t)
+            _mt.append('\t\t\t\t\t}\n')
             _mt.append('\t\t\t\t\tset_great_project_tier_3 = { type = %s }\n' % _t)
             _mt.append('\t\t\t\t}\n')
         _mt.append('\t\t\t}\n\t\t}\n\t}\n}\n')
         _mt_body = ''.join(_mt)
+        _bad_mt = [t for t in all_types if ('type = %s tier = 3' % t) not in _mt_body]
+        if _bad_mt or 'AMR_max_all_monuments_done' not in _mt_body:
+            problems_all.append('一键三级决议缺少 tier=3 防重复/一次性守卫：%s'
+                                % '、'.join(_bad_mt[:5]))
         _nl_mt = '\r\n'
         for _rel in (os.path.join('common', 'decisions'), 'decisions'):
             _ddir_mt = os.path.join(OUT, _rel)
@@ -860,7 +872,7 @@ for V in VARIANTS:
             write_text(os.path.join(_ddir_mt, 'AMR_max_all_monuments.txt'),
                        _mt_body, nl=_nl_mt)
         log('')
-        log('一键三级决议：AMR_max_all_monuments（免费，点一次全部升到三级）')
+        log('一键三级决议：AMR_max_all_monuments（免费，每局一次，只升未满三级的）')
         log('   写入 %d 件奇观的升级分支，脚本 %d KB / %d 行'
             % (len(all_types), len(_mt_body) // 1024, len(_mt)))
         log('   用的是原版 set_great_project_tier_3（内部对 0/1/2 级都有级联，一次到位）。')
@@ -955,14 +967,14 @@ for V in VARIANTS:
     # 一键三级决议的文案（1.3）。键名规则同上：<决议名>_title / _desc
     if MAKE_MAX_TIER_DEC and all_types:
         _mt_t = '奇观全部升到三级'
-        _mt_d = ('点一次，你名下所有奇观立刻升到三级。免费，无冷却。'
-                 '只影响你已经拥有的奇观；没建、没拥有的不动。')
+        _mt_d = ('点一次，你名下所有未满三级的奇观升到三级。免费，每局只能用一次；'
+                 '已三级的不会增加发展度。没建、没拥有的不动。')
         LOC += _line('AMR_max_all_monuments_title',
                      'Set all owned monuments to tier 3', _mt_t)
         LOC += _line('AMR_max_all_monuments_desc',
-                     ('Every monument you already own jumps straight to tier 3 at once. '
-                      'Free, no cooldown. Monuments you do not own or have not built '
-                      'are left untouched.'), _mt_d)
+                     ('Every owned monument below tier 3 jumps straight to tier 3 at once. '
+                      'Free, once per campaign. Monuments already at tier 3 do not gain '
+                      'development. Monuments you do not own are untouched.'), _mt_d)
         LOC_CN += ' AMR_max_all_monuments_title:0 "%s"\n' % _mt_t
         LOC_CN += ' AMR_max_all_monuments_desc:0 "%s"\n' % _mt_d
     # 建造花费 / 建造时间打折（生成时写进定义的那部分）—— 单列一条自己的提示

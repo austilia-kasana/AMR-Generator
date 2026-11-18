@@ -702,9 +702,9 @@ def _move_locked():
     return str(MAKE_MOVE).lower() == 'ai'
 
 
-def make_movable(block, stats):
+def make_movable(block, stats, name=''):
     """搬运开关。can_be_moved 是【定义层】，而且引擎不读里面的条件 ——
-    没有任何写法能做到"只有玩家能搬、AI 不能"，所以只有两档：
+    没有任何写法能做到"只有玩家能搬、AI 不能"，所以只有三档：
 
       keep（1.3 默认）can_be_moved / move_days 原样返回
         只解除使用限制，不解除作者写好的搬运限制。
@@ -721,13 +721,15 @@ def make_movable(block, stats):
       不受 move= 影响 —— 矮人隧道、升降机、妖精传送门、地下城入口、原版三条运河
       搬了会把地图通路断开或让地牢探索失效。想放开：config.txt 写 keepunmovable=no。
     """
-    if str(MAKE_MOVE).lower() == 'keep':
-        return block        # keep：can_be_moved 原样保留，只解除使用限制
-    # 先取这件奇观的键名（块首 `key = {`）
+    # 键名优先用 transform_block 传进来的 name；直接调用的测试块可能带 `key = {` 前缀。
+    # keep 只对名单外的奇观原样返回；名单内仍然强制 no（1.3 的“永远不可搬”）。
     _km = re.match(r'\s*([A-Za-z_0-9.\-]+)\s*=\s*\{', block)
-    _key = _km.group(1) if _km else ''
+    _key = name or (_km.group(1) if _km else '')
     _keep_still = bool(MAKE_KEEP_UNMOVABLE) and _key in KEEP_UNMOVABLE
-    locked = _keep_still or str(MAKE_MOVE).lower() != 'raw'
+    _mode = str(MAKE_MOVE).lower()
+    if _mode == 'keep' and not _keep_still:
+        return block        # keep：名单外，can_be_moved 原样保留
+    locked = _keep_still or _mode != 'raw'
     pat = r'(?m)^([\t ]*can_be_moved[ \t]*=[ \t]*)(yes|no)(?=[ \t]*(?:#|\r|$))'
     want = 'no' if locked else 'yes'
     other = 'yes' if locked else 'no'

@@ -94,7 +94,8 @@ def make_cover(out_path, cn_title, en_title, subtitle, cn_size=50, badge=None):
         return False
 
 def process_file(src, dst, tag):
-    raw = open(src, 'rb').read()
+    with open(src, 'rb') as _fh:
+        raw = _fh.read()
     # 统一成 LF 再处理：所有以 $ 结尾的正则（如 can_be_moved = no）在 CRLF 下会失效。
     # 写回文件时第 555 行会按原始行尾风格还原，不影响游戏读取。
     text = raw.decode('latin-1').replace('\r\n', '\n')
@@ -139,7 +140,8 @@ def process_file(src, dst, tag):
             '位置 %s；上下文 %r'
             % (['%r U+%04X' % (c, ord(c)) for c in _bad[:8]],
                _e.start, result[max(0, _e.start - 80):_e.start + 40])) from None
-    open(dst, 'wb').write(_data)
+    with open(dst, 'wb') as _fh:
+        _fh.write(_data)
 
     # ---------------------------------------------------------- verification
     problems = []
@@ -188,13 +190,28 @@ def process_file(src, dst, tag):
     _move_keep = str(MAKE_MOVE).lower() == 'keep'
     if not _move_keep:
         _late_from, _late_to = ('no', 'yes') if not _move_locked() else ('yes', 'no')
+        # 只处理奇观块【外】的漏网字段；块内已经由 make_movable 定好，
+        # 尤其是 KEEP_UNMOVABLE 里被强制 no 的奇观，绝不能被这里再改回 yes。
+        _mon_spans = []
+        _n_out = [0]
+        for _bn, _bs, _bo, _bc in find_blocks(result):
+            if _bc > _bo and is_monument(result[_bo:_bc + 1]):
+                _mon_spans.append((_bo, _bc + 1))
+
+        def _late_outside(m):
+            for _a, _b in _mon_spans:
+                if _a <= m.start() < _b:
+                    return m.group(0)       # 块内：保持 make_movable 的结果
+            _n_out[0] += 1
+            stats['cbm_added' if not _move_locked() else 'cbm_locked'] += 1
+            return m.group(1) + _late_to
+
         result, _n_late = re.subn(
             r'(?m)^([\t ]*can_be_moved[ \t]*=[ \t]*)' + _late_from
-            + r'(?=[ \t]*(?:#|\r|$))', r'\1' + _late_to, result)
-        if _n_late:
-            stats['cbm_added' if not _move_locked() else 'cbm_locked'] += _n_late
+            + r'(?=[ \t]*(?:#|\r|$))', _late_outside, result)
+        if _n_out[0]:
             log('   (块外的 %d 行 can_be_moved = %s 也一并改掉了)'
-                % (_n_late, _late_from))
+                % (_n_out[0], _late_from))
     # 输出里不能再有"掉在块外的判断语句"（游戏会报 Unexpected token 并丢掉它们）
     n_leak = 0
     for m in re.finditer(r'(?m)^([A-Za-z_0-9._\-]+)[ \t]*=[ \t]*\{', result):
@@ -216,8 +233,20 @@ def process_file(src, dst, tag):
         if n_yes or n_no < n_mon:
             problems.append('can_be_moved 应全部为 no：yes=%d no=%d 共 %d 个奇观'
                             % (n_yes, n_no, n_mon))
-    elif n_no or n_yes < n_mon:
-        problems.append('can_be_moved: yes=%d no=%d 共 %d 个奇观' % (n_yes, n_no, n_mon))
+    else:
+        # raw：普通奇观必须 yes，但 KEEP_UNMOVABLE 名单内必须仍为 no。
+        _bad_cbm = []
+        for _n, _s, _bo, _bc in find_blocks(result):
+            _b = result[_bo:_bc + 1]
+            if not is_monument(_b):
+                continue
+            _prot = bool(MAKE_KEEP_UNMOVABLE) and _n in KEEP_UNMOVABLE
+            _want = 'no' if _prot else 'yes'
+            if not re.search(r'(?m)^[\t ]*can_be_moved[\t ]*=[\t ]*' + _want + r'\b', _b):
+                _bad_cbm.append('%s 应为 %s' % (_n, _want))
+        if _bad_cbm:
+            problems.append('can_be_moved 不符合 raw/名单规则（%d 件）：%s'
+                            % (len(_bad_cbm), '、'.join(_bad_cbm[:5])))
     # 打折：把【源文件】和【输出】逐件对一遍 —— 源里是正数的，输出里必须正好
     # 变成结果值；源里是 0 的，输出里必须还是 0（不许把原本免费的动成别的数）。
     if _pct(MAKE_BUILDCOST) is not None or _pct(MAKE_BUILDTIME) is not None:

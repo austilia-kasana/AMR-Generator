@@ -331,9 +331,49 @@ class TestMakeMovableKeepUnmovable(unittest.TestCase):
             self.assertIn(k, C.KEEP_UNMOVABLE)
 
 
+class TestMakeMovableKeepListed(unittest.TestCase):
+    """move=keep 也不能绕过 KEEP_UNMOVABLE 名单。
+
+    回归：早先 keep 在取键名之前直接 return，名单里的通路/地下城会被源
+    定义的 can_be_moved=yes 放出来；keep 只应对名单外原样返回。
+    """
+
+    def setUp(self):
+        self._old_move = S.MAKE_MOVE
+        self._old_keep = S.MAKE_KEEP_UNMOVABLE
+        self._old_set = S.KEEP_UNMOVABLE
+        S.MAKE_MOVE = 'keep'
+        S.MAKE_KEEP_UNMOVABLE = True
+        S.KEEP_UNMOVABLE = frozenset(('dd_stramolgiv', 'kiel_canal'))
+
+    def tearDown(self):
+        S.MAKE_MOVE = self._old_move
+        S.MAKE_KEEP_UNMOVABLE = self._old_keep
+        S.KEEP_UNMOVABLE = self._old_set
+
+    def test_listed_stays_locked_under_keep(self):
+        d = st()
+        out = S.make_movable('kiel_canal = {\n\tcan_be_moved = yes\n}\n', d)
+        self.assertIn('can_be_moved = no', out)
+        self.assertNotIn('can_be_moved = yes', out)
+        self.assertEqual(d['cbm_locked'], 1)
+
+    def test_listed_absent_field_added_as_no_under_keep(self):
+        d = st()
+        out = S.make_movable('dd_stramolgiv = {\n\ttype = monument\n}\n', d)
+        self.assertIn('can_be_moved = no', out)
+        self.assertEqual(d['cbm_locked'], 1)
+
+    def test_unlisted_source_yes_untouched_under_keep(self):
+        d = st()
+        src = 'normal = {\n\tcan_be_moved = yes\n}\n'
+        self.assertEqual(S.make_movable(src, d), src)
+        self.assertEqual(d['cbm_locked'], 0)
+
+
 class TestMakeMovableLocked(unittest.TestCase):
-    """move=ai（默认）：can_be_moved 一律锁成 no —— AI 再也搬不动，
-    玩家的搬运改走 generate.py 生成的搬迁决议。"""
+    """move=ai：can_be_moved 一律锁成 no —— AI 再也搬不动；
+    1.3 不再生成额外搬迁决议。"""
 
     def setUp(self):
         self._old = S.MAKE_MOVE

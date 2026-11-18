@@ -951,5 +951,5 @@ def transform_block(block, stats, name=''):
         block = _killed            # 白板：不加旁路，conditional_modifier 也不动
     for key in ('can_upgrade_trigger', 'keep_trigger'):
         block = wrap_top_level(block, key, stats)
-    block = make_movable(block, stats)
+    block = make_movable(block, stats, name)
     return block

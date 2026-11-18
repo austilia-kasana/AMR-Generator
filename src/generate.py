@@ -919,7 +919,14 @@ for V in VARIANTS:
             if miss:
                 log('   !! 本地化缺字 %s：%s（这条退回英文）' % (key, ''.join(miss)))
                 return None
-            return FONT.encode(cn, strict=True)
+            enc = FONT.encode(cn, strict=True)
+            # 0x0A/0x0D 会让 loc 行断开；0x1A 是 SUB 控制码，实测会把行截断/显示乱码。
+            _ctrl = [c for c in enc if ord(c) in (0x0A, 0x0D, 0x1A)]
+            if _ctrl:
+                log('   !! 本地化编码含控制字符 %s：%s（这条退回英文）'
+                    % (key, ', '.join('0x%02X' % ord(c) for c in _ctrl)))
+                return None
+            return enc
         except Exception as e:
             log('   !! 本地化编码失败 %s：%s（这条退回英文）' % (key, e))
             return None
@@ -968,7 +975,7 @@ for V in VARIANTS:
     if MAKE_MAX_TIER_DEC and all_types:
         _mt_t = '奇观全部升到三级'
         _mt_d = ('点一次，你名下所有未满三级的奇观升到三级。免费，每局只能用一次；'
-                 '已三级的不会增加发展度。没建、没拥有的不动。')
+                 '已三级的不再增加发展度。没建、没拥有的不动。')
         LOC += _line('AMR_max_all_monuments_title',
                      'Set all owned monuments to tier 3', _mt_t)
         LOC += _line('AMR_max_all_monuments_desc',

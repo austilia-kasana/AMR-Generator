@@ -1,13 +1,16 @@
 # AMR Generator example config. Copy to config.txt before running.
-# 默认保持旧行为：全部可搬 + 不改 AI 倾向。
-# 想要“只解使用限制、不解除搬运限制”：改成 move=keep
-# 想关掉 AI 主动搬运奇观：改成 aimove=yes
+# 搬迁功能默认【开启】（全部奇观都能搬）；想关掉：move=ai
+# 想保留作者原本的搬运限制（只解除使用限制）：move=keep
 
 move=raw
-aimove=no
+# AI 搬运倾向归零（写一份 common/defines/zzzz_amr_ai_move.lua，不影响玩家）
+aimove=yes
 
-# 一键三级决议
+# 一键三级可重复点决议
 maxtierdec=yes
+# ★ 升级打折决议默认与一键三级互斥（一键三级免费直达 III 后打折没有收益）。
+#   想两个都要：upgdec=force
+upgdec=no
 # 隐藏奇观加成：no / agp / yes
 hiddenbonus=no
 # 建造条件留空的奇观：date / all / no
@@ -15,7 +18,5 @@ lockopen=date
 # 建造花费/时间折扣（90 = 打一折；no = 不动）
 buildcost=90
 buildtime=90
-# 升级折扣决议
-upgdec=yes
 upgcost=-0.9
 upgtime=-0.9

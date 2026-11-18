@@ -219,9 +219,9 @@ Names, pictures and definitions still come from the original mods; the generator
   strictbuild=yes  把奇观钉回它自己的省份 / pin each Great Project to its own province
   buildcost=90     建造花费打几折（90 = 打一折，100 = 完全免费，0/no = 不动）/ build cost discount
   buildtime=90     建造时间打几折（同上）/ build time discount
-  move=keep        只解除使用限制，can_be_moved / 搬运耗时保持作者原样（默认）/ unlock use only, keep the author's movement rules (default)
-  move=raw         全部放开搬运（谁都能搬）/ unlock the Move button for everyone
-  move=ai          全部锁死搬运（谁都不能搬）/ lock the Move button for everyone
+  move=raw         全部放开搬运（谁都能搬）—— 默认 / unlock the Move button for everyone (default)
+  move=ai          全部锁死搬运（谁都不能搬）= 关掉搬迁功能 / lock the Move button for everyone
+  move=keep        只解除使用限制，can_be_moved / 搬运耗时保持作者原样 / unlock use only, keep the author's movement rules
   aimove=yes       生成外部 defines，把 AI 搬运倾向归零（默认）/ write external defines to zero AI relocation desire (default)
   movedays=1       仅 raw/ai 模式：每距离基础搬运时间统一成这个值（keep 模式不动）/ only raw/ai: move_days_per_unit_distance
   upgdec=yes       生成"升级打折"决议 / build the upgrade-discount decision

@@ -3,8 +3,10 @@
 EU4（Europa Universalis IV）1.37 的奇观（Great Project）规则生成器。读取当前播放集里已启用的奇观 mod，生成一个玩家专用的 mod：
 
 - 奇观加成/升级条件对玩家生效
+- 搬迁默认开启：全部奇观都能搬（`move=raw`）
 - 可选：只解除使用限制（`move=keep`），保留作者写的搬运限制
-- 可选：一键把所有已拥有奇观升到 III 级
+- 可选：关掉搬迁功能（`move=ai`，谁的“移动”按钮都锁上）
+- 可选：一键把所有已拥有奇观升到 III 级（可重复点，只改等级、不给发展度）
 - 可选：外部 defines 降低 AI 搬运奇观的倾向
 - 可选：隐藏奇观处理、年份闸、建造折扣、升级折扣等
 
@@ -27,16 +29,18 @@ python src/generate.py
 配置示例：
 
 ```ini
-# 搬运：raw=全部放开（默认）；ai=全部锁死；keep=只解使用限制，保留作者限制
+# 搬运：raw=全部放开（默认）；ai=全部锁死（关掉搬迁功能）；keep=只解使用限制，保留作者限制
 move=raw
 # 想要“只解使用限制、不解除搬运限制”就改成：
 # move=keep
-# AI 搬运倾向：yes=写外部 defines 归零；no=不动（默认）
-aimove=no
-# 想关掉 AI 主动搬运就改成：
-# aimove=yes
-# 一键三级决议
+# 想关掉搬迁功能就改成：
+# move=ai
+# AI 搬运倾向：yes=写外部 defines 归零；no=不动
+aimove=yes
+# 一键三级决议（可重复点）
 maxtierdec=yes
+# 升级打折决议：默认与一键三级互斥；想两个都要写 upgdec=force
+upgdec=no
 ```
 
 完整开关见 `src/amr_config.py` 顶部注释。

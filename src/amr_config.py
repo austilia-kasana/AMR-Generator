@@ -102,7 +102,8 @@ MAKE_BUILDCOST = '90'       # '0'~'100'，或 'no' 表示保持原样
 MAKE_BUILDTIME = '90'       # 同上
 
 # --- 奇观搬运 ----------------------------------------------------------------
-# 2026-11-18 1.3 默认改成 'keep'：只解除使用限制，保留作者原本的搬运限制。
+# 默认 'raw'：全局解锁搬迁（用户 2026-11-19 明确要求的功能默认开启）。
+# 想关掉：config.txt 里写 move=ai（游戏外开关；定义层进游戏后改不了）。
 # can_be_moved 是定义层，引擎不读它里面的条件，**没有"只锁 AI"的写法**
 # （引擎自己的 subject_types 里 can_have_great_projects_moved_by_overlord
 #  就是给朝贡设的，跟玩家/AI 无关）；要单独限制 AI 用 aimove=yes 的外部 defines。
@@ -112,12 +113,13 @@ MAKE_BUILDTIME = '90'       # 同上
 # 注：曾经做过"玩家专属搬迁决议"（move_great_project），实测点了没反应；
 #     也试过 destroy + add_great_project 重建，实测只摧毁成功、重建没成功。
 #     两条路都已放弃，见 _交接\10_第二轮交接说明.md 第 4.9/4.10 节。
-MAKE_MOVE = 'raw'           # 默认旧行为；要“只解使用限制、不解除搬运限制”就显式写 move=keep
+MAKE_MOVE = 'raw'           # 默认：全局解锁；要“只解使用限制”写 move=keep，要全锁写 move=ai
 # AI 搬运奇观倾向（定义层外部文件）。aimove=yes 时在产物里写
-# common/defines/00_amr_ai_move.lua，把 NAI 的四个 GREAT_PROJECT_DESIRE_*
+# common/defines/zzzz_amr_ai_move.lua，把 NAI 的四个 GREAT_PROJECT_DESIRE_*
 # 归零：AI 不再想把奇观搬去首都/从附庸搬走。
 # 不影响玩家的 can_be_moved；想连玩家一起锁，用 move=ai。
-# 本 mod 名以 !AMR 开头，按名字排序在最前，defines 覆盖优先。
+# ★ 1.3.5：文件名从 00_ 改成 zzzz_ —— 不同名的 defines 文件是各执行一遍、
+#   后赋值的赢，按文件名排序；00_ 前缀等于永远第一个被赋值（别人的 10_/zz_ 会盖掉我们）。
 MAKE_AI_MOVE = False        # 可选开关：aimove=yes 才写外部 defines，把 AI 搬运倾向归零
 # ★ 2026-11-18（1.3）：通路 / 地下城类奇观【永远不可搬】，不受 move= 影响。
 #   理由：这些是"地图通路"机制（矮人隧道、升降机、妖精传送门、地下城入口），
